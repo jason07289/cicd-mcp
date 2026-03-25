@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: cicd-mcp
+
+io:
+  github:
+    jason07289:
+      cicd:
+        mcp:
+          repositories:
+            - id: demo
+              name: Demo (replace with real SVN)
+              root_url: https://svn.example.com/demo
+              group: default
+              credentials:
+                username: ${SVN_DEMO_USER:}
+                password: ${SVN_DEMO_PASSWORD:}
+          authz_file: ""
+          defaults:
+            log_limit_max: 500
+            file_content_max_bytes: 2000000

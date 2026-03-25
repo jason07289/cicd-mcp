@@ -1,0 +1,161 @@
+package io.github.jason07289.cicd.mcp.config;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+
+@ConfigurationProperties(prefix = "io.github.jason07289.cicd.mcp")
+public class CicdMcpProperties {
+
+    @NestedConfigurationProperty
+    private List<RepositoryEntry> repositories = new ArrayList<>();
+
+    private String authzFile;
+
+    @NestedConfigurationProperty
+    private Defaults defaults = new Defaults();
+
+    public List<RepositoryEntry> getRepositories() {
+        return repositories;
+    }
+
+    public void setRepositories(List<RepositoryEntry> repositories) {
+        this.repositories = repositories != null ? repositories : new ArrayList<>();
+    }
+
+    public String getAuthzFile() {
+        return authzFile;
+    }
+
+    public void setAuthzFile(String authzFile) {
+        this.authzFile = authzFile;
+    }
+
+    public Defaults getDefaults() {
+        return defaults;
+    }
+
+    public void setDefaults(Defaults defaults) {
+        this.defaults = defaults != null ? defaults : new Defaults();
+    }
+
+    public static class RepositoryEntry {
+
+        private String id;
+        private String name;
+        private String rootUrl;
+        private String group;
+
+        @NestedConfigurationProperty
+        private Credentials credentials = new Credentials();
+
+        @NestedConfigurationProperty
+        private Bugtraq bugtraq = new Bugtraq();
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getRootUrl() {
+            return rootUrl;
+        }
+
+        public void setRootUrl(String rootUrl) {
+            this.rootUrl = rootUrl;
+        }
+
+        public String getGroup() {
+            return group;
+        }
+
+        public void setGroup(String group) {
+            this.group = group;
+        }
+
+        public Credentials getCredentials() {
+            return credentials;
+        }
+
+        public void setCredentials(Credentials credentials) {
+            this.credentials = credentials != null ? credentials : new Credentials();
+        }
+
+        public Bugtraq getBugtraq() {
+            return bugtraq;
+        }
+
+        public void setBugtraq(Bugtraq bugtraq) {
+            this.bugtraq = bugtraq != null ? bugtraq : new Bugtraq();
+        }
+    }
+
+    public static class Credentials {
+
+        private String username;
+        private String password;
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+    }
+
+    public static class Bugtraq {
+
+        private String logRegex;
+
+        public String getLogRegex() {
+            return logRegex;
+        }
+
+        public void setLogRegex(String logRegex) {
+            this.logRegex = logRegex;
+        }
+    }
+
+    public static class Defaults {
+
+        private int logLimitMax = 500;
+        private long fileContentMaxBytes = 2_000_000L;
+
+        public int getLogLimitMax() {
+            return logLimitMax;
+        }
+
+        public void setLogLimitMax(int logLimitMax) {
+            this.logLimitMax = logLimitMax;
+        }
+
+        public long getFileContentMaxBytes() {
+            return fileContentMaxBytes;
+        }
+
+        public void setFileContentMaxBytes(long fileContentMaxBytes) {
+            this.fileContentMaxBytes = fileContentMaxBytes;
+        }
+    }
+}
