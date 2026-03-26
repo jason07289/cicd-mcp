@@ -20,7 +20,7 @@ public class ConfiguredRepositoryCatalog implements RepositoryCatalog {
         return properties.getRepositories().stream()
                 .map(
                         r ->
-                                new RepositorySummary(
+                                RepositorySummary.fromConfig(
                                         r.getId(), r.getName(), r.getRootUrl(), r.getGroup()))
                 .toList();
     }

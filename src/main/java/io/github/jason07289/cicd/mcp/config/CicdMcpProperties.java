@@ -141,6 +141,8 @@ public class CicdMcpProperties {
 
         private int logLimitMax = 500;
         private long fileContentMaxBytes = 2_000_000L;
+        /** Max revisions to run diff stats on in repository_author_stats. */
+        private int maxRevisionsForStats = 500;
 
         public int getLogLimitMax() {
             return logLimitMax;
@@ -156,6 +158,14 @@ public class CicdMcpProperties {
 
         public void setFileContentMaxBytes(long fileContentMaxBytes) {
             this.fileContentMaxBytes = fileContentMaxBytes;
+        }
+
+        public int getMaxRevisionsForStats() {
+            return maxRevisionsForStats;
+        }
+
+        public void setMaxRevisionsForStats(int maxRevisionsForStats) {
+            this.maxRevisionsForStats = maxRevisionsForStats;
         }
     }
 }

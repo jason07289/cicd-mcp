@@ -69,7 +69,7 @@ Capabilities are aligned with WebSVN-style flows and exposed as MCP **`tool`** c
 
 - **MCP endpoint (Streamable HTTP):** `http://localhost:8080/mcp` (default port **8080**).
 - **Configuration:** `src/main/resources/application.yml`, prefix `io.github.jason07289.cicd.mcp` (nested under `io.github.jason07289.cicd.mcp` in YAML). Demo credentials can be overridden with `SVN_DEMO_USER` and `SVN_DEMO_PASSWORD`.
-- **Implemented today:** `list_repositories` only (metadata from config; passwords are never returned in tool output).
+- **Implemented today (MVP tools):** `list_repositories` (config only), `list_path`, `get_file`, `get_log`, `get_revision`, `diff_file`, `blame_file` (SVNKit against each repo `root_url`; credentials stay server-side and are never returned in tool output).
 
 ---
 

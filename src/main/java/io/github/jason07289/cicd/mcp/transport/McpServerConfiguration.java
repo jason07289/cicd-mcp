@@ -1,12 +1,12 @@
 package io.github.jason07289.cicd.mcp.transport;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.jason07289.cicd.mcp.svn.api.RepositoryCatalog;
+import io.github.jason07289.cicd.mcp.tool.McpJsonSchemas;
+import io.github.jason07289.cicd.mcp.tool.SvnMcpTools;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
@@ -18,8 +18,45 @@ import org.springframework.web.servlet.function.ServerResponse;
 @Configuration
 public class McpServerConfiguration {
 
-    private static final McpSchema.JsonSchema EMPTY_OBJECT_SCHEMA =
-            new McpSchema.JsonSchema("object", Map.of(), List.of(), true, null, null);
+    private static Map<String, Map<String, Object>> getLogProperties() {
+        Map<String, Map<String, Object>> m = new LinkedHashMap<>();
+        m.put(
+                "repository_id",
+                McpJsonSchemas.stringProp("Repository id from configuration."));
+        m.put(
+                "path",
+                McpJsonSchemas.stringProp("Path relative to repository root; empty for root."));
+        m.put(
+                "start_revision",
+                McpJsonSchemas.integerProp(
+                        "Optional high revision for log traversal (defaults to HEAD). Ignored when start_date/end_date are set."));
+        m.put(
+                "end_revision",
+                McpJsonSchemas.integerProp(
+                        "Optional low revision (defaults to 0). Ignored when start_date/end_date are set."));
+        m.put(
+                "limit",
+                McpJsonSchemas.integerProp(
+                        "Max number of log entries (capped by server defaults)."));
+        m.put(
+                "stop_on_copy",
+                McpJsonSchemas.booleanProp("If true, stop when a copy is encountered."));
+        m.put(
+                "start_date",
+                McpJsonSchemas.stringProp(
+                        "Optional inclusive start (ISO-8601). When set with end_date, bounds revisions and filters by commit time."));
+        m.put(
+                "end_date",
+                McpJsonSchemas.stringProp(
+                        "Optional inclusive end (ISO-8601). When set with start_date, bounds revisions and filters by commit time."));
+        m.put("author", McpJsonSchemas.stringProp("Optional filter by svn:author."));
+        m.put(
+                "author_match",
+                McpJsonSchemas.stringEnumProp(
+                        "How author matches: exact (default) or contains.",
+                        List.of("exact", "contains")));
+        return m;
+    }
 
     @Bean
     WebMvcStreamableServerTransportProvider mcpStreamableTransport() {
@@ -28,40 +65,305 @@ public class McpServerConfiguration {
 
     @Bean
     McpSyncServer mcpSyncServer(
-            WebMvcStreamableServerTransportProvider transport,
-            RepositoryCatalog repositoryCatalog,
-            ObjectMapper objectMapper) {
+            WebMvcStreamableServerTransportProvider transport, SvnMcpTools tools) {
         return McpServer.sync(transport)
                 .serverInfo("jason07289-cicd-mcp", "0.1.0")
-                .capabilities(
-                        McpSchema.ServerCapabilities.builder().tools(false).build())
+                .capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
                 .toolCall(
                         McpSchema.Tool.builder()
                                 .name("list_repositories")
                                 .description(
-                                        "Lists SVN repositories configured in application.yml (id, name, root URL, group).")
-                                .inputSchema(EMPTY_OBJECT_SCHEMA)
+                                        "Without server_url: lists repositories from application.yml (source=config). "
+                                                + "With server_url: live discovery — lists immediate child directories at that parent URL (same as svn list), "
+                                                + "e.g. multi-repo svnserve or SVNParentPath. On a single-repo root, results may be trunk/branches/tags, not separate repos.")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                Map.of(
+                                                        "server_url",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Optional parent SVN URL (e.g. svn://host:3690/). When set, performs live directory listing."),
+                                                        "credential_repository_id",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Optional repository_id whose configured credentials are used for discovery (preferred over username/password when set)."),
+                                                        "username",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Optional username for discovery when not using credential_repository_id."),
+                                                        "password",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Optional password for discovery when not using credential_repository_id.")),
+                                                List.of()))
                                 .build(),
-                        (exchange, request) -> {
-                            try {
-                                String json =
-                                        objectMapper.writeValueAsString(
-                                                repositoryCatalog.listRepositories());
-                                return McpSchema.CallToolResult.builder()
-                                        .content(List.of(new McpSchema.TextContent(json)))
-                                        .isError(false)
-                                        .build();
-                            } catch (JsonProcessingException e) {
-                                return McpSchema.CallToolResult.builder()
-                                        .content(
+                        (exchange, request) ->
+                                tools.listRepositories(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
+                .toolCall(
+                        McpSchema.Tool.builder()
+                                .name("list_path")
+                                .description(
+                                        "Lists a directory at a revision (tree) or lists files recursively under a path (flat) using SVNKit.")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                Map.of(
+                                                        "repository_id",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Repository id from configuration."),
+                                                        "path",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Directory path relative to repository root; use empty string for root."),
+                                                        "revision",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Optional revision number; omit for HEAD."),
+                                                        "peg_revision",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Optional peg revision (reserved; pass revision for now)."),
+                                                        "view_mode",
+                                                        McpJsonSchemas.stringEnumProp(
+                                                                "tree: one directory level; flat: files under path with limits.",
+                                                                List.of("tree", "flat")),
+                                                        "flat_max_depth",
+                                                        McpJsonSchemas.integerProp(
+                                                                "For view_mode=flat: max directory depth."),
+                                                        "flat_max_entries",
+                                                        McpJsonSchemas.integerProp(
+                                                                "For view_mode=flat: max number of file entries.")),
+                                                List.of("repository_id")))
+                                .build(),
+                        (exchange, request) ->
+                                tools.listPath(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
+                .toolCall(
+                        McpSchema.Tool.builder()
+                                .name("get_file")
+                                .description(
+                                        "Reads a file at a revision. Returns text or Base64 with mime metadata; truncates to configured max bytes.")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                Map.of(
+                                                        "repository_id",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Repository id from configuration."),
+                                                        "path",
+                                                        McpJsonSchemas.stringProp(
+                                                                "File path relative to repository root."),
+                                                        "revision",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Optional revision number; omit for HEAD."),
+                                                        "peg_revision",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Optional peg revision (reserved).")),
+                                                List.of("repository_id", "path")))
+                                .build(),
+                        (exchange, request) ->
+                                tools.getFile(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
+                .toolCall(
+                        McpSchema.Tool.builder()
+                                .name("get_log")
+                                .description(
+                                        "Commits affecting a path (newest-first within revision range), with changed paths when available. "
+                                                + "When start_date/end_date are set (ISO-8601), revision bounds are derived via getDatedRevision and entries are filtered by commit date. "
+                                                + "Optional author + author_match (exact|contains) filter server-side.")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                getLogProperties(),
+                                                List.of("repository_id")))
+                                .build(),
+                        (exchange, request) ->
+                                tools.getLog(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
+                .toolCall(
+                        McpSchema.Tool.builder()
+                                .name("get_revision")
+                                .description(
+                                        "Returns metadata and changed paths for a single revision.")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                Map.of(
+                                                        "repository_id",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Repository id from configuration."),
+                                                        "revision",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Revision number to inspect.")),
+                                                List.of("repository_id", "revision")))
+                                .build(),
+                        (exchange, request) ->
+                                tools.getRevision(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
+                .toolCall(
+                        McpSchema.Tool.builder()
+                                .name("diff_file")
+                                .description(
+                                        "Unified diff of a file between two revisions (SVNKit diff).")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                Map.of(
+                                                        "repository_id",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Repository id from configuration."),
+                                                        "path",
+                                                        McpJsonSchemas.stringProp(
+                                                                "File path relative to repository root."),
+                                                        "from_revision",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Older revision (smaller number)."),
+                                                        "to_revision",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Newer revision (larger number)."),
+                                                        "ignore_whitespace",
+                                                        McpJsonSchemas.booleanProp(
+                                                                "If true, ignore whitespace in diff.")),
                                                 List.of(
-                                                        new McpSchema.TextContent(
-                                                                "Serialization error: "
-                                                                        + e.getOriginalMessage())))
-                                        .isError(true)
-                                        .build();
-                            }
-                        })
+                                                        "repository_id",
+                                                        "path",
+                                                        "from_revision",
+                                                        "to_revision")))
+                                .build(),
+                        (exchange, request) ->
+                                tools.diffFile(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
+                .toolCall(
+                        McpSchema.Tool.builder()
+                                .name("blame_file")
+                                .description(
+                                        "Line-by-line blame (revision and author per line) for a file.")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                Map.of(
+                                                        "repository_id",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Repository id from configuration."),
+                                                        "path",
+                                                        McpJsonSchemas.stringProp(
+                                                                "File path relative to repository root."),
+                                                        "revision",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Optional end revision for annotate; omit for HEAD.")),
+                                                List.of("repository_id", "path")))
+                                .build(),
+                        (exchange, request) ->
+                                tools.blameFile(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
+                .toolCall(
+                        McpSchema.Tool.builder()
+                                .name("resolve_revision_range")
+                                .description(
+                                        "Maps an inclusive time range to SVN revisions using getDatedRevision (approximate). "
+                                                + "Use LogEntry dates for strict boundaries.")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                Map.of(
+                                                        "repository_id",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Repository id from configuration."),
+                                                        "path",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Optional path under the repo root; empty for root."),
+                                                        "start_inclusive",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Inclusive start instant (ISO-8601)."),
+                                                        "end_inclusive",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Inclusive end instant (ISO-8601).")),
+                                                List.of(
+                                                        "repository_id",
+                                                        "start_inclusive",
+                                                        "end_inclusive")))
+                                .build(),
+                        (exchange, request) ->
+                                tools.resolveRevisionRange(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
+                .toolCall(
+                        McpSchema.Tool.builder()
+                                .name("diff_revision")
+                                .description(
+                                        "Unified diff for a single revision (svn diff -c REV) under an optional path prefix.")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                Map.of(
+                                                        "repository_id",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Repository id from configuration."),
+                                                        "path",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Optional path prefix under repo root; empty for entire tree."),
+                                                        "revision",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Revision to diff (compared to revision-1)."),
+                                                        "ignore_whitespace",
+                                                        McpJsonSchemas.booleanProp(
+                                                                "If true, ignore whitespace in diff.")),
+                                                List.of("repository_id", "revision")))
+                                .build(),
+                        (exchange, request) ->
+                                tools.diffRevision(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
+                .toolCall(
+                        McpSchema.Tool.builder()
+                                .name("repository_author_stats")
+                                .description(
+                                        "Per-author commit counts and diff line totals for a time window. "
+                                                + "by_author is sorted by diff magnitude (lines added + removed) descending. "
+                                                + "Use calendar_date + timezone for a local calendar day, or start_inclusive + end_inclusive (ISO-8601).")
+                                .inputSchema(
+                                        McpJsonSchemas.object(
+                                                Map.of(
+                                                        "repository_id",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Repository id from configuration."),
+                                                        "path_prefix",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Optional path prefix; empty for whole repository."),
+                                                        "calendar_date",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Optional local calendar day (YYYY-MM-DD). Use with timezone (default UTC)."),
+                                                        "timezone",
+                                                        McpJsonSchemas.stringProp(
+                                                                "IANA zone id when using calendar_date (e.g. Asia/Seoul)."),
+                                                        "start_inclusive",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Inclusive range start (ISO-8601). Required if calendar_date is omitted."),
+                                                        "end_inclusive",
+                                                        McpJsonSchemas.stringProp(
+                                                                "Inclusive range end (ISO-8601). Required if calendar_date is omitted."),
+                                                        "max_revisions_to_analyze",
+                                                        McpJsonSchemas.integerProp(
+                                                                "Cap revisions for diff stats (bounded by server default).")),
+                                                List.of("repository_id")))
+                                .build(),
+                        (exchange, request) ->
+                                tools.repositoryAuthorStats(
+                                        exchange,
+                                        request.arguments() != null
+                                                ? request.arguments()
+                                                : Map.of()))
                 .build();
     }
 

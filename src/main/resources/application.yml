@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8765
 
 spring:
   application:
@@ -11,14 +11,15 @@ io:
       cicd:
         mcp:
           repositories:
-            - id: demo
-              name: Demo (replace with real SVN)
-              root_url: https://svn.example.com/demo
+            - id: test-repo
+              name: test-repo
+              root_url: svn://localhost:3690/test-repo
               group: default
               credentials:
-                username: ${SVN_DEMO_USER:}
-                password: ${SVN_DEMO_PASSWORD:}
+                username: ${SVN_DEMO_USER:admin}
+                password: ${SVN_DEMO_PASSWORD:Hsnc123!}
           authz_file: ""
           defaults:
             log_limit_max: 500
             file_content_max_bytes: 2000000
+            max_revisions_for_stats: 500
