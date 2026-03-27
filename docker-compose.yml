@@ -1,0 +1,11 @@
+services:
+  cicd-mcp:
+    image: cicd-mcp:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8765:8765"
+    environment:
+      SVN_DEMO_USER: ${SVN_DEMO_USER:-admin}
+      SVN_DEMO_PASSWORD: ${SVN_DEMO_PASSWORD:-Password123!}

@@ -17,7 +17,7 @@ io:
               group: default
               credentials:
                 username: ${SVN_DEMO_USER:admin}
-                password: ${SVN_DEMO_PASSWORD:Hsnc123!}
+                password: ${SVN_DEMO_PASSWORD:Password123!}
           authz_file: ""
           defaults:
             log_limit_max: 500
