@@ -1,22 +1,23 @@
-# Secret(cicd-mcp-svn)을 먼저 적용한 뒤 배포.
+# Secret(svn-mcp-secret)을 먼저 적용한 뒤 배포.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cicd-mcp
+  name: svn-mcp
+  namespace: mcp
   labels:
-    app.kubernetes.io/name: cicd-mcp
+    app.kubernetes.io/name: svn-mcp
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: cicd-mcp
+      app.kubernetes.io/name: svn-mcp
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: cicd-mcp
+        app.kubernetes.io/name: svn-mcp
     spec:
       containers:
-        - name: cicd-mcp
+        - name: svn-mcp
           image: cicd-mcp:0.1.0
           imagePullPolicy: IfNotPresent
           ports:
@@ -26,17 +27,17 @@ spec:
             - name: SVN_DEMO_USER
               valueFrom:
                 secretKeyRef:
-                  name: cicd-mcp-svn
+                  name: svn-mcp-secret
                   key: svn-demo-user
             - name: SVN_DEMO_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: cicd-mcp-svn
+                  name: svn-mcp-secret
                   key: svn-demo-password
             - name: IO_GITHUB_JASON07289_CICD_MCP_REPOSITORIES_0_ROOT_URL
               valueFrom:
                 secretKeyRef:
-                  name: cicd-mcp-svn
+                  name: svn-mcp-secret
                   key: svn-repo-root-url
           resources:
             requests:

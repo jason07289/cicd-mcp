@@ -2,14 +2,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: cicd-mcp
+  name: svn-mcp
+  namespace: mcp
   labels:
-    app.kubernetes.io/name: cicd-mcp
+    app.kubernetes.io/name: svn-mcp
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: cicd-mcp
+    app.kubernetes.io/name: svn-mcp
   ports:
     - name: http
-      port: 8765
+      port: 80
       targetPort: http

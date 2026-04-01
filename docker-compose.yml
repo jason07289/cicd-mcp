@@ -7,5 +7,6 @@ services:
     ports:
       - "8765:8765"
     environment:
+      SERVER_PORT: "8765"
       SVN_DEMO_USER: ${SVN_DEMO_USER:-admin}
       SVN_DEMO_PASSWORD: ${SVN_DEMO_PASSWORD:-Password123!}

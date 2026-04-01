@@ -67,7 +67,20 @@ Capabilities are aligned with WebSVN-style flows and exposed as MCP **`tool`** c
 ./gradlew bootRun
 ```
 
-- **MCP endpoint (Streamable HTTP):** `http://localhost:8080/mcp` (default port **8080**).
+- **MCP endpoint (Streamable HTTP):** `http://localhost:8765/mcp` (default port **8765**, `server.port` in `application.yml`).
+
+### Docker
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+- **MCP URL:** `http://localhost:8765/mcp`
+- Host and container both listen on **8765** (`docker-compose.yml` `ports` and `SERVER_PORT`).
+
+To use another host port, change `ports` to e.g. `"9000:8765"` and keep the container app on **8765** unless you also override `SERVER_PORT` / `application.yml`.
 - **Configuration:** `src/main/resources/application.yml`, prefix `io.github.jason07289.cicd.mcp` (nested under `io.github.jason07289.cicd.mcp` in YAML). Demo credentials can be overridden with `SVN_DEMO_USER` and `SVN_DEMO_PASSWORD`.
 - **Implemented today (MVP tools):** `list_repositories` (config only), `list_path`, `get_file`, `get_log`, `get_revision`, `diff_file`, `blame_file` (SVNKit against each repo `root_url`; credentials stay server-side and are never returned in tool output).
 

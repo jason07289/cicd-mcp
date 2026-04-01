@@ -2,9 +2,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: cicd-mcp
+  name: svn-mcp
+  namespace: mcp
   labels:
-    app.kubernetes.io/name: cicd-mcp
+    app.kubernetes.io/name: svn-mcp
 spec:
   ingressClassName: nginx
   rules:
@@ -15,6 +16,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: cicd-mcp
+                name: svn-mcp
                 port:
-                  number: 8765
+                  number: 80
