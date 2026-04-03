@@ -4,7 +4,7 @@
 
 > *WebSVN이 브라우저에 주던 읽기 흐름을, Streamable HTTP로 호출 가능한 MCP 도구로 제공합니다.*
 
-[English README](README.md) · 상세 요구: [PRD.md](PRD.md) · 코드 구조: [ARCHITECTURE.md](ARCHITECTURE.md)
+[English README](README.md) · 상세 요구: [PRD.md](PRD.md) · 코드 구조: [ARCHITECTURE.md](ARCHITECTURE.md) · 시나리오: [기간별 생산량](docs/scenarios/productivity-by-period.md)
 
 ---
 
