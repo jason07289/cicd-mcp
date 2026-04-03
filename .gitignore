@@ -9,3 +9,4 @@ out/
 # Local bundle artifacts
 cicd-mcp.tar
 k8s_cicd_mcp.zip
+bin/
