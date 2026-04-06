@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.jason07289.cicd.mcp.svn.api.*;
-import io.github.jason07289.cicd.mcp.svn.service.SvnServerDiscovery;
 import io.modelcontextprotocol.spec.McpSchema;
 import java.util.Date;
 import java.util.List;
@@ -26,14 +25,13 @@ class SvnMcpToolsTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock private RepositoryCatalog repositoryCatalog;
-    @Mock private SvnServerDiscovery serverDiscovery;
     @Mock private SvnRepositoryOperations svn;
 
     private SvnMcpTools tools;
 
     @BeforeEach
     void setUp() {
-        tools = new SvnMcpTools(objectMapper, repositoryCatalog, serverDiscovery, svn);
+        tools = new SvnMcpTools(objectMapper, repositoryCatalog, svn);
     }
 
     @Test
@@ -54,52 +52,6 @@ class SvnMcpToolsTest {
                 .contains("demo")
                 .contains("https://svn.example.com/demo")
                 .contains("\"source\":\"config\"");
-    }
-
-    @Test
-    void listRepositories_withServerUrl_callsDiscovery() throws Exception {
-        when(serverDiscovery.discover("svn://h/", null, null, null))
-                .thenReturn(
-                        List.of(
-                                new RepositorySummary(
-                                        "discovered:x",
-                                        "x",
-                                        "svn://h/x",
-                                        "discovered",
-                                        "discovered",
-                                        "svn://h/")));
-
-        McpSchema.CallToolResult result =
-                tools.listRepositories(null, Map.of("server_url", "svn://h/"));
-        assertThat(result.isError()).isFalse();
-        String json = ((McpSchema.TextContent) result.content().get(0)).text();
-        assertThat(json).contains("discovered").contains("svn://h/x");
-    }
-
-    @Test
-    void listRepositories_discoveryThrowsNoSuchElement_returnsError() throws Exception {
-        when(serverDiscovery.discover("svn://x/", "bad", null, null))
-                .thenThrow(new java.util.NoSuchElementException("Unknown repository_id: bad"));
-
-        McpSchema.CallToolResult result =
-                tools.listRepositories(
-                        null,
-                        Map.of("server_url", "svn://x/", "credential_repository_id", "bad"));
-        assertThat(result.isError()).isTrue();
-        assertThat(((McpSchema.TextContent) result.content().get(0)).text())
-                .contains("Unknown repository_id");
-    }
-
-    @Test
-    void listRepositories_discoveryThrowsSvnAccess_returnsError() throws Exception {
-        when(serverDiscovery.discover("svn://x/", null, null, null))
-                .thenThrow(new SvnAccessException("connection failed"));
-
-        McpSchema.CallToolResult result =
-                tools.listRepositories(null, Map.of("server_url", "svn://x/"));
-        assertThat(result.isError()).isTrue();
-        assertThat(((McpSchema.TextContent) result.content().get(0)).text())
-                .contains("connection failed");
     }
 
     @Test

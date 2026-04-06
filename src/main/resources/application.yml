@@ -18,6 +18,20 @@ io:
               credentials:
                 username: ${SVN_DEMO_USER:admin}
                 password: ${SVN_DEMO_PASSWORD:Password123!}
+            - id: my-test
+              name: my-test
+              root_url: svn://localhost:3690/my-test
+              group: default
+              credentials:
+                username: ${SVN_DEMO_USER:admin}
+                password: ${SVN_DEMO_PASSWORD:Password123!}
+            - id: websvn
+              name: websvn
+              root_url: svn://localhost:3690/websvn
+              group: default
+              credentials:
+                username: ${SVN_DEMO_USER:admin}
+                password: ${SVN_DEMO_PASSWORD:Password123!}
           authz_file: ""
           defaults:
             log_limit_max: 500

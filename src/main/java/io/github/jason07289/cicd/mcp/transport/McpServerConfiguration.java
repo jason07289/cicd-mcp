@@ -73,25 +73,9 @@ public class McpServerConfiguration {
                         McpSchema.Tool.builder()
                                 .name("list_repositories")
                                 .description(
-                                        "Without server_url: lists repositories from application.yml (source=config). "
-                                                + "With server_url: live discovery — lists immediate child directories at that parent URL (same as svn list), "
-                                                + "e.g. multi-repo svnserve or SVNParentPath. On a single-repo root, results may be trunk/branches/tags, not separate repos.")
-                                .inputSchema(
-                                        McpJsonSchemas.object(
-                                                Map.of(
-                                                        "server_url",
-                                                        McpJsonSchemas.stringProp(
-                                                                "Optional parent SVN URL (e.g. svn://host:3690/). When set, performs live directory listing."),
-                                                        "credential_repository_id",
-                                                        McpJsonSchemas.stringProp(
-                                                                "Optional repository_id whose configured credentials are used for discovery (preferred over username/password when set)."),
-                                                        "username",
-                                                        McpJsonSchemas.stringProp(
-                                                                "Optional username for discovery when not using credential_repository_id."),
-                                                        "password",
-                                                        McpJsonSchemas.stringProp(
-                                                                "Optional password for discovery when not using credential_repository_id.")),
-                                                List.of()))
+                                        "Lists repositories defined in application.yml (id, name, root URL, group; source=config). "
+                                                + "Credentials are not returned.")
+                                .inputSchema(McpJsonSchemas.emptyObject())
                                 .build(),
                         (exchange, request) ->
                                 tools.listRepositories(

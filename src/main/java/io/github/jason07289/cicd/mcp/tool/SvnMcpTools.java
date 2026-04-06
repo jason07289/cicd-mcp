@@ -5,14 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.jason07289.cicd.mcp.svn.api.RepositoryCatalog;
 import io.github.jason07289.cicd.mcp.svn.api.SvnAccessException;
 import io.github.jason07289.cicd.mcp.svn.api.SvnRepositoryOperations;
-import io.github.jason07289.cicd.mcp.svn.service.SvnServerDiscovery;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,38 +18,21 @@ public class SvnMcpTools {
 
     private final ObjectMapper objectMapper;
     private final RepositoryCatalog repositoryCatalog;
-    private final SvnServerDiscovery serverDiscovery;
     private final SvnRepositoryOperations svn;
 
     public SvnMcpTools(
             ObjectMapper objectMapper,
             RepositoryCatalog repositoryCatalog,
-            SvnServerDiscovery serverDiscovery,
             SvnRepositoryOperations svn) {
         this.objectMapper = objectMapper;
         this.repositoryCatalog = repositoryCatalog;
-        this.serverDiscovery = serverDiscovery;
         this.svn = svn;
     }
 
     public McpSchema.CallToolResult listRepositories(
             McpSyncServerExchange exchange, Map<String, Object> args) {
         try {
-            String serverUrl = ToolArguments.optionalStringNullable(args, "server_url");
-            if (serverUrl != null) {
-                String credentialRepoId =
-                        ToolArguments.optionalStringNullable(args, "credential_repository_id");
-                String username = ToolArguments.optionalStringNullable(args, "username");
-                String password = ToolArguments.optionalStringNullable(args, "password");
-                return jsonOk(
-                        serverDiscovery.discover(
-                                serverUrl, credentialRepoId, username, password));
-            }
             return jsonOk(repositoryCatalog.listRepositories());
-        } catch (NoSuchElementException e) {
-            return textError(e.getMessage());
-        } catch (SvnAccessException e) {
-            return textError(e.getMessage());
         } catch (JsonProcessingException e) {
             return jsonError("Serialization error: " + e.getOriginalMessage());
         }
