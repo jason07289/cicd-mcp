@@ -1,6 +1,11 @@
 .git
 .gitignore
-build
+# Keep build/libs/*.jar for docker/Dockerfile.packaged (exclude heavy dirs only)
+build/classes
+build/generated
+build/reports
+build/resources
+build/tmp
 .gradle
 .idea
 *.iml

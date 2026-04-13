@@ -3,7 +3,9 @@ services:
     image: cicd-mcp:latest
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      # Default: host-built JAR (no Gradle download inside Docker — avoids disk issues).
+      # All-in-Docker build: CICD_MCP_DOCKERFILE=docker/Dockerfile docker compose build
+      dockerfile: ${CICD_MCP_DOCKERFILE:-docker/Dockerfile.packaged}
     ports:
       - "8765:8765"
     environment:
